@@ -280,8 +280,8 @@ def train(ctx):
                 format="PNG",
             )
 
-        torch.save(generator.state_dict(), generator_model_file)
-        torch.save(discriminator.state_dict(), discriminator_model_file)
+    torch.save(generator.state_dict(), generator_model_file)
+    torch.save(discriminator.state_dict(), discriminator_model_file)
 
     print("Training complete")
     print(f"Generator model saved to {generator_model_file}")
