@@ -13,6 +13,8 @@ from random import uniform
 import seaborn as sns
 import click
 
+from PIL import Image, ImageDraw, ImageFont
+
 # To pause execution and inspect variables, add this line where you'd like to pause:
 #   code.interact(local=locals())
 # If you're stuck in a loop and want to halt execution completely, use:
@@ -254,6 +256,8 @@ def train(ctx):
             # Train the generator during odd epochs
             if epoch % 2 == 1:
                 generator.zero_grad()
+                generated_samples = generator(latent_space_samples)
+
                 output_discriminator = discriminator(generated_samples)
                 loss_generator = loss_function(
                     output_discriminator, real_samples_labels
@@ -319,6 +323,7 @@ def sweep(ctx):
             latent_space_samples = tensors[i]
             generated_samples = generator(latent_space_samples)
         generated_image = transforms.ToPILImage()(generated_samples[0])
+        generated_image = add_text_to_image(generated_image, f"Latent: {values[i]}", (6, 52))
         # generated_image.show()
         generated_image.save(
             f"{sweep_directory}/image{str(i).zfill(4)}.png", format="PNG"
@@ -330,6 +335,12 @@ def sweep(ctx):
         f"ffmpeg -framerate 10 -i {sweep_directory}/image%04d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p sweep.mp4"
     )
 
+def add_text_to_image(image, text, position, font_size=8):
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()
+    font = font.font_variant(size=font_size)
+    draw.text(position, text, font=font, fill="black")
+    return image
 
 @click.group()
 @click.pass_context
