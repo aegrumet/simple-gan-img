@@ -19,7 +19,7 @@ use a different version, update requirements.txt accordingly.
 
 Clone this repository.
 
-Cange to the repo directory, create and activate new python environment
+Change to the repo directory, create and activate new python environment
 
 ```sh
 cd simple-gan-img
