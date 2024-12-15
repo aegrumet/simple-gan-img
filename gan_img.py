@@ -1,3 +1,4 @@
+import code
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -12,6 +13,12 @@ from random import uniform
 import seaborn as sns
 import click
 
+# To pause execution and inspect variables, add this line where you'd like to pause:
+#   code.interact(local=locals())
+# If you're stuck in a loop and want to halt execution completely, use:
+#   import sys
+#   sys.exit(0)
+
 
 def select_device_name():
     device = (
@@ -24,8 +31,14 @@ def select_device_name():
 
 
 class GANImageGenerator(nn.Module):
-    def __init__(self, latent_dim, image_channels, feature_maps=64):
+    def __init__(self, latent_dim, image_channels, feature_maps=16):
         super(GANImageGenerator, self).__init__()
+
+        # The generator is a series of transposed convolutional layers
+        # that upsample the latent vector to the final image in multiple stages,
+        # starting with step from 1x1 to {feature_maps*8}x4x4, then applying
+        # successive 2x upscaling and reducing the number of maps to reach the
+        # final 64x64 image.
 
         self.net = nn.Sequential(
             # Latent vector to dense feature map
@@ -149,12 +162,12 @@ def train(ctx):
     TRAIN_DATA_COUNT = 1024
     train_data = img.to(device)
     train_set = [
-        # This is the true image so the label is always 1
-        (train_data, 1)
+        # This is the true image so the label is always 1.
+        # The tensor shape and data type must be consistent with the
+        # discriminator's output.
+        (train_data, torch.tensor((1,), dtype=torch.float32))
         for i in range(TRAIN_DATA_COUNT)
     ]
-
-    # Create the true positives data loader
     BATCH_SIZE = 32
     train_loader = DataLoader(train_set, batch_size=BATCH_SIZE)
 
@@ -179,7 +192,7 @@ def train(ctx):
         nn.Sigmoid(),
     )
 
-    # Test the discriminator
+    # Check the discriminator
     # input = torch.rand((1, 1, 64, 64))
     # d = discriminator(input)
     # print(d.shape)
@@ -189,33 +202,46 @@ def train(ctx):
     image_channels = 1
     generator = GANImageGenerator(latent_dim, image_channels)
 
-    # Test the generator
+    # Check the generator
     # latent_vector = torch.randn(1, latent_dim, 1, 1, device=device)  # Shape: [batch_size, latent_dim, 1, 1]
     # generated_image = generator(latent_vector)
-    # print(generated_image.shape)  # Should be [1, 3, 64, 64] for a 64x64 RGB image
+    # print(generated_image.shape)  # Should be [1, 1, 64, 64] for a 64x64 greyscale image
 
     # train loop
     LR = 0.001
-    NUM_EPOCHS = 51
+    MAX_EPOCHS = 51
     loss_function = nn.BCELoss()
     optimizer_discriminator = torch.optim.Adam(discriminator.parameters())
     optimizer_generator = torch.optim.Adam(generator.parameters())
 
-    for epoch in range(NUM_EPOCHS):
-        for n, (real_samples, _) in enumerate(train_loader):
-            # Training the discriminator
-            real_samples_labels = torch.ones((BATCH_SIZE, 1), device=device)
+    for epoch in range(MAX_EPOCHS):
+
+        # Train in batches using a repeated version of the same single training image,
+        # plus a random set of fake images from the generator.
+
+        for n, (real_samples, real_samples_labels) in enumerate(train_loader):
+
+            # Generate fake samples, which are used for training both the
+            # generator and the discriminator.
+
+            # Dimensions are: batch size, latent channels (1), height, width
             latent_space_samples = torch.randn(
                 BATCH_SIZE, latent_dim, 1, 1, device=device
             )
+            # Generate sample 64x64 images from random latent-space input
+            # (normally distributed, mean 0 std 1)
             generated_samples = generator(latent_space_samples)
+            # Labels for generated samples are zero since these are true
+            # negatives.
             generated_samples_labels = torch.zeros((BATCH_SIZE, 1))
+
+            # Concatenate the real & fake samples for the batch
             all_samples = torch.cat((real_samples, generated_samples), dim=0)
             all_samples_labels = torch.cat(
                 (real_samples_labels, generated_samples_labels), dim=0
             )
 
-            # Data for training the discriminator
+            # Train the discriminator during even epochs
             if epoch % 2 == 0:
                 discriminator.zero_grad()
                 output_discriminator = discriminator(all_samples)
@@ -225,17 +251,12 @@ def train(ctx):
                 loss_discriminator.backward()
                 optimizer_discriminator.step()
 
+            # Train the generator during odd epochs
             if epoch % 2 == 1:
-                # Data for training the generator
-                # latent_space_samples = torch.randn((BATCH_SIZE, 1))
-                latent_space_samples = torch.randn(BATCH_SIZE, latent_dim, 1, 1)
-
-                # Training the generator
                 generator.zero_grad()
-                generated_samples = generator(latent_space_samples)
-                output_discriminator_generated = discriminator(generated_samples)
+                output_discriminator = discriminator(generated_samples)
                 loss_generator = loss_function(
-                    output_discriminator_generated, real_samples_labels
+                    output_discriminator, real_samples_labels
                 )
                 loss_generator.backward()
                 optimizer_generator.step()
@@ -289,7 +310,7 @@ def sweep(ctx):
     generator.eval()
 
     # generate images for a sweep of latent space values
-    values = np.linspace(-1, 1, 100, dtype=np.float64)
+    values = np.linspace(-1, 1, 200, dtype=np.float64)
     tensors = [
         torch.tensor(value, dtype=torch.float32).view(1, 1, 1, 1) for value in values
     ]
