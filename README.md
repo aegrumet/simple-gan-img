@@ -57,7 +57,7 @@ To run this, you must first train the model and save it to file.
 
 With ffmpeg or a similar tool, it's possible to create a movie of the sweep.
 
-As an exaxmple movie see [sweep.mp4](sweep.mp4) in this repository.
+As an example movie see [sweep.mp4](sweep.mp4) in this repository.
 
 The sweep shows an interesting trainsition around the latent value of 0. It's on
 my TO-DO list to understand why :-)
