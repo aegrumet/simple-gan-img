@@ -15,6 +15,23 @@ for the [PyTorch Ultimate class](https://www.udemy.com/course/pytorch-ultimate/)
 The package versions in requirements.txt were tested with Python 3.10.16. If you
 use a different version, update requirements.txt accordingly.
 
+# Setup
+
+Clone this repository.
+
+Cange to the repo directory, create and activate new python environment
+
+```sh
+cd simple-gan-img
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install packages
+```sh
+pip install -r requirements.txt
+```
+
 # Basic usage
 
 ## Training image
