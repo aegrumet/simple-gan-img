@@ -58,8 +58,12 @@ The first image is the training image.
 Each subsequent image is the generator output after 5 additional training epochs.
 The generated images should converge to the training image.
 
-At the end of training, the discriminator and model states are saved to files as
-indicated by the program output.
+At the end of training, the discriminator and generator model states are saved to
+files as indicated by the program output.
+
+With ffmpeg or a similar tool, it's possible to create a movie of the training.
+
+As an example movie see [train.mp4](train.mp4) in this repository.
 
 ## Sweep
 
@@ -70,7 +74,8 @@ outputs, run
 python gan_img.py sweep
 ```
 
-To run this, you must first train the model and save it to file.
+To run this, you must first train the network. This saves the generator model to
+a file that gets loaded before running the sweep.
 
 With ffmpeg or a similar tool, it's possible to create a movie of the sweep.
 

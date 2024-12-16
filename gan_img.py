@@ -274,6 +274,7 @@ def train(ctx):
                 latent_space_samples = torch.randn(1, latent_dim, 1, 1, device=device)
                 generated_samples = generator(latent_space_samples)
             generated_image = transforms.ToPILImage()(generated_samples[0])
+            generated_image = add_text_to_image(generated_image, f"Epoch: {epoch}", (6, 52))
             generated_image.show()
             generated_image.save(
                 f"{train_progress_directory}/image{str(epoch).zfill(4)}.png",
@@ -287,6 +288,10 @@ def train(ctx):
     print(f"Generator model saved to {generator_model_file}")
     print(f"Discriminator model saved to {discriminator_model_file}")
 
+    print(f"You can make a video from these images using ffmpeg with the command:")
+    print(
+        f"ffmpeg -framerate 1 -pattern_type glob -i '{train_progress_directory}/image*.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p train.mp4"
+    )
 
 @click.command()
 @click.pass_context
@@ -332,7 +337,7 @@ def sweep(ctx):
     print(f"Latent-space sweep images saved to {sweep_directory}")
     print(f"You can make a video from these images using ffmpeg with the command:")
     print(
-        f"ffmpeg -framerate 10 -i {sweep_directory}/image%04d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p sweep.mp4"
+        f"ffmpeg -framerate 10 -pattern_type glob -i '{sweep_directory}/image*.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p sweep.mp4"
     )
 
 def add_text_to_image(image, text, position, font_size=8):
